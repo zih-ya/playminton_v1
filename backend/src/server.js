@@ -12,7 +12,7 @@ const app = express();
 
 // app.use(cors());
 app.use(express.json());
-app.use("/", routes);
+
 db.connect();
 
 if (process.env.NODE_ENV === "production") {
@@ -22,6 +22,8 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(path.join(__dirname, "../../frontend", "build", "index.html"));
   });
 }
+
+app.use("/", routes);
 
 const port = process.env.PORT || 4000;
 
