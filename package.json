@@ -4,5 +4,10 @@
   "main": "index.js",
   "repository": "https://github.com/zih-ya/wp_final.git",
   "author": "Tzu-Ya Chao <zihyachao@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "install:prod": "cd frontend && yarn install --freeze-lockfile && cd ../backend && yarn install --freeze-lockfile",
+    "build": "cd frontend && yarn build",
+    "deploy": "cd backend && yarn deploy"
+  }
 }
