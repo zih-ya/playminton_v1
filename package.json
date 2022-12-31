@@ -1,0 +1,8 @@
+{
+  "name": "wp_final",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/zih-ya/wp_final.git",
+  "author": "Tzu-Ya Chao <zihyachao@gmail.com>",
+  "license": "MIT"
+}
