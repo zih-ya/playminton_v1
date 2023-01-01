@@ -33,8 +33,8 @@ const BuildEventPage = () => {
   dayjs.extend(customParseFormat);
   const dateFormat = "YYYY/MM/DD";
   const format = "HH:mm";
-
-  const today = new Date().toLocaleDateString("zh-CN");
+  const today = new Date().toISOString().split`-`.join`/`.slice(0,10);
+  //const today = new Date().toLocaleDateString("zh-CN");
   const [dateString, setDateString] = useState(today);
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("00:00");

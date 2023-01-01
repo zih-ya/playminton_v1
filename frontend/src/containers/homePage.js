@@ -31,11 +31,9 @@ const HomePage = () => {
     if (announcement === "") {
       message.error("Your announcement is blank!")
     } else {
-      const date = new Date().toLocaleDateString("zh-CN");
-      const {
+      const { 
         data: { msg },
-      } = await axios.post("/add", {
-        date,
+      } = await axios.post("/announcements/add", {
         author:me,
         msg:announcement
       });
@@ -49,7 +47,7 @@ const HomePage = () => {
   const deleteAnnounce = async(announcementID) => {
     const {
       data: { msg },
-    } = await axios.post("/delete", {
+    } = await axios.post("/announcements/delete", {
       id:announcementID
     });
     get_data();

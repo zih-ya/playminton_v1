@@ -1,8 +1,7 @@
 import React, {useState, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { Typography, Card, Button, Space } from 'antd';
-import { useUserNEvent } from '../hooks/useUserNEvent';
+import { Typography, Card, Button } from 'antd';
 import axios from "../api";
 
 const Wrapper = styled.div`

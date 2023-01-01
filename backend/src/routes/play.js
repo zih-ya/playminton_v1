@@ -37,6 +37,22 @@ router.get("/users", (req, res) => {
   });
 });
 
+// update avatar
+router.post("/user/avatar", (req, res) => {
+  const { email, preview } = req.body;
+  UserModel.updateOne({ email }, { avatar: preview }, () => {
+    res.send({ status: true, msg: "Successfully uploaded" });
+  });
+});
+
+// update intro
+router.post("/user/intro", (req, res) => {
+  const { email, intro } = req.body;
+  UserModel.updateOne({ email }, { intro }, () => {
+    res.send({ status: true, msg: "Intro successfully uploaded" });
+  });
+});
+
 // Update name
 router.post("/users/name", (req, res) => {
   const { email, name } = req.body;
@@ -64,15 +80,26 @@ router.post("/users/password", (req, res) => {
       res.send({ status: false, msg: "Incorrect password" });
       return;
     } else {
-      UserModel.updateOne(
-        { email },
-        { password: newPassword },
-        () => {
-          res.send({ status: true, msg: "Successfully updated your password" });
-        }
-      );
+      UserModel.updateOne({ email }, { password: newPassword }, () => {
+        res.send({ status: true, msg: "Successfully updated your password" });
+      });
     }
   });
+});
+
+router.get("/users/profile", async (req, res) => {
+  const { name, email } = req.query;
+  let a = {};
+  if (name) a = { name };
+  else a = { email };
+  const profile = await UserModel.findOne({ a });
+  let newprofile = {
+    email: profile.email,
+    name: profile.name,
+    avatar: profile.avatar,
+    intro: profile.intro,
+  };
+  res.send({ msg: "Get Profile", newprofile });
 });
 
 // build events (應該不需要檢查重複？)
@@ -94,39 +121,8 @@ router.post("/events", (req, res) => {
   res.send({ msg: "Create event" });
 });
 
-// get events
-router.get("/games", async (req, res) => {
-  const isFuture = req.query.isFuture;
-  const Games = await GameModel.find();
-  let games = Games.filter((game) => {
-    let today = new Date();
-    
-    // You can also use the following for "let day = ..."
-    // const today = new Date().toLocaleDateString("zh-CN");
-    let day =
-      today.getFullYear() +
-      "/" +
-      (today.getMonth() + 1) +
-      "/" +
-      today.getDate();
-      
-    if (JSON.parse(isFuture)) {
-      let a = game.date > day;
-      if (game.date.toString() === day.toString()) {
-        let time = today.getHours() + ":" + today.getMinutes();
-        a = game.startTime > time;
-      }
-      return a;
-    } else {
-      let a = game.date < day;
-      if (game.date.toString() === day.toString()) {
-        let time = today.getHours() + ":" + today.getMinutes();
-        a = game.startTime < time;
-      }
-      return a;
-    }
-  });
-  games = games.sort((a, b) => {
+const sort_games = (games) => {
+  return games.sort((a, b) => {
     if (a.date > b.date) return 1;
     else if (a.date < b.date) return -1;
     else if (a.startTime > b.startTime) return 1;
@@ -134,22 +130,57 @@ router.get("/games", async (req, res) => {
     else if (a.endTime > b.endTime) return 1;
     else return -1;
   });
+};
+const replace_participants = async (games) => {
   for (let i = 0; i <= games.length - 1; i++) {
     let host = await UserModel.findOne({ email: games[i].host });
-    host = host.name;
-    games[i].host = host;
+    games[i].host = host.name;
     for (let j = 0; j <= games[i].participants.length - 1; j++) {
-      let name = await UserModel.findOne({ email: games[i].participants[j] });
-      name = name.name;
-      games[i].participants[j] = name;
+      let participant = await UserModel.findOne({
+        email: games[i].participants[j],
+      });
+      games[i].participants[j] = participant.name;
     }
   }
-  res.send(games);
+  return games;
+};
+// get events
+router.get("/games", async (req, res) => {
+  const isFuture = req.query.isFuture;
+  const Games = await GameModel.find();
+  let games = Games.filter((game) => {
+    let today = new Date();
+    // You can also use the following for "let day = ..."
+    // const today = new Date().toLocaleDateString("zh-CN");
+    let date = new Date(game.date + " " + game.startTime);
+    if (JSON.parse(isFuture)) {
+      return date > today;
+    } else {
+      return date < today;
+    }
+  });
+  games = sort_games(games);
+  let newgames = await replace_participants(games);
+  res.send(newgames);
+});
+
+router.get("/games/user", async (req, res) => {
+  const email = req.query.email;
+  const Games = await GameModel.find();
+  let games = Games.filter((game) => {
+    return game.participants.some((participant) => {
+      return participant === email;
+    });
+  });
+  games = sort_games(games);
+  let newgames = await replace_participants(games);
+  res.send(newgames);
 });
 
 // a person join
-router.post("/join", async (req, res) => {
+router.post("/games/join", async (req, res) => {
   const { id, email } = req.body;
+  console.log(req.body);
   const newGame = await GameModel.findOne({ id });
   if (newGame.numberLeft > 0) {
     newGame.participants.push(email);
@@ -161,7 +192,7 @@ router.post("/join", async (req, res) => {
 });
 
 // cancel one participant with this email
-router.post("/cancel", async (req, res) => {
+router.post("/games/cancel", async (req, res) => {
   const { id, email } = req.body;
   const newGame = await GameModel.findOne({ id });
   let n = true;
@@ -180,16 +211,23 @@ router.post("/cancel", async (req, res) => {
 
 // get announcements
 router.get("/announcements", async (req, res) => {
-  const announcements = await AnnouncementModel.find();
+  let announcements = await AnnouncementModel.find();
+  announcements = announcements.sort((a, b) => {
+    if (a.date < b.date) return 1;
+    else return -1;
+  });
+  for (let i = 0; i <= announcements.length - 1; i++) {
+    announcements[i].date = announcements[i].date.slice(0, 10);
+  }
   res.send(announcements);
 });
 
 // add announcement
-router.post("/add", async (req, res) => {
-  const { date, author, msg } = req.body;
+router.post("/announcements/add", async (req, res) => {
+  const { author, msg } = req.body;
   const newannouncement = new AnnouncementModel({
     id: uuidv4(),
-    date,
+    date: new Date().toISOString().split`-`.join`/`,
     author,
     msg,
   });
@@ -198,7 +236,7 @@ router.post("/add", async (req, res) => {
 });
 
 // delete announcement
-router.post("/delete", async (req, res) => {
+router.post("/announcements/delete", async (req, res) => {
   const id = req.body.id;
   await AnnouncementModel.deleteOne({ id });
   res.send({ msg: "Delete announcement" });
