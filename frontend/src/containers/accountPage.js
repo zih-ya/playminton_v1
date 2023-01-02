@@ -51,8 +51,10 @@ const AccountPage = () => {
   };
 
   useEffect(() => {
-    getUserData();
-  }, []);
+
+    if(me) getUserData();
+  }, [me]);
+
 
   const updateName = async () => {
     if (name === "") {
@@ -279,7 +281,7 @@ const AccountPage = () => {
           </Space>
         </Wrapper>
       ) : (
-        <Text mark>You haven't logged in yet.</Text>
+        <Text mark>To check your information, please <span style={{cursor: 'pointer', color: 'cornflowerblue'}} onClick={() => navigate("/login")}>log in</span> or <span style={{cursor: 'pointer', color: 'cornflowerblue'}} onClick={() => navigate("/register")}>register</span> first.</Text>
       )}
     </PageWrapper>
   );

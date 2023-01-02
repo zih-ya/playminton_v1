@@ -40,9 +40,9 @@ const UserEventPage = () => {
     });
     setDatas(data.data);
   }
-  useEffect(()=>{
-    getUserDatas();
-  },[])
+  useEffect(() => {
+    if(me) getUserDatas();
+  }, [me]);
 
   const combine_time = (startTime, endTime) => {
     let time = startTime+"-"+endTime;

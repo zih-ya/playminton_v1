@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { Typography, Card, Button } from 'antd';
 import axios from "../api";
+import validator from "email-validator";
+import { useUserNEvent } from "../hooks/useUserNEvent";
 
 const Wrapper = styled.div`
   display: flex;

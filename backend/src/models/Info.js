@@ -17,8 +17,8 @@ const GameSchema = new Schema({
   startTime: String,
   endTime: String,
   place: String,
-  host: String,
-  participants: [String],
+  host: {email:String, username:String},
+  participants: [{email:String, username:String}],
   numberLeft: Number,
   notes: String,
 });

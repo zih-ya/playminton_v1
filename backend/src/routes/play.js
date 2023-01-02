@@ -1,24 +1,85 @@
 import { Router } from "express";
 import { UserModel, GameModel, AnnouncementModel } from "../models/Info";
 import { v4 as uuidv4 } from "uuid";
+import sendMail from "../utils/email";
 
 const router = Router();
+class Session {
+  constructor(email, expiresAt) {
+      this.email = email;
+      this.expiresAt = expiresAt;
+  }
+  isExpired() {
+      this.expiresAt < new Date()
+  }
+}
+const sessions = {};
+
+router.get("/login", (req, res) => {
+  const newsessionToken = req.query.session_token;
+  let sessionToken = newsessionToken.slice(14);
+  if(sessionToken)
+  {
+    let userSession = sessions[sessionToken]
+    if(userSession)
+    {
+      if(userSession.isExpired())
+      {
+        delete sessions[sessionToken];
+        res.send({ newme:"", newisLogin:false });
+      }
+      else res.send({ newme:userSession.email, newisLogin:true });
+    }
+    else res.send({ newme:"", newisLogin:false });
+  }
+  else res.send({ newme:"", newisLogin:false });
+});
+
+router.get("/logout", (req, res) => {
+  const newsessionToken = req.query.session_token;
+  let sessionToken = newsessionToken.slice(14);
+  if(sessionToken)
+  {
+    delete sessions[sessionToken];
+    res.send({ msg: "Logout Success", session_token: "", expires: new Date() });
+  }
+  else res.send({ msg: "Logout Falure" });
+});
+
+let token = 0;
+const generateToken = () => {
+  token = Math.random().toString(36).substring(2, 12);
+};
 
 // 處理 register
-router.post("/users", (req, res) => {
-  const { email, password, name } = req.body;
-  console.log("name:", name);
+router.post("/user/register", (req, res) => {
+  const { email } = req.body;
 
   // 確認 email 是否已經註冊過了
   UserModel.findOne({ email }, (err, data) => {
     if (data) {
       res.send({ status: false, msg: "User already exist" });
     } else {
-      const newUser = new UserModel({ email, password, name });
-      newUser.save();
-      res.send({ status: true, msg: "Create user" });
+      generateToken();
+      sendMail({ email, token });
+      res.send({
+        status: true,
+        msg: "Registration code has been sent to your email account",
+      });
     }
   });
+});
+
+// to validate user's email
+router.get("/user/validation", async (req, res) => {
+  const { code, email, password, name } = req.query;
+  if (code == token) {
+    const newUser = new UserModel({ email, password, name });
+    await newUser.save();
+    res.json({ valid: true, msg: "Successfully registerd" });
+  } else {
+    res.json({ valid: false, msg: "Invalid registration code" });
+  }
 });
 
 // 處理 login
@@ -26,7 +87,12 @@ router.get("/users", (req, res) => {
   const { email, password } = req.query;
   UserModel.findOne({ email, password }, (err, data) => {
     if (data) {
-      res.json({ exist: true, msg: "Successfully logged in", name: data.name });
+      const sessionToken = uuidv4();
+      const now = new Date()
+      const expiresAt = new Date(now + 360000);
+      const session = new Session(email, expiresAt);
+      sessions[sessionToken] = session;
+      res.json({ exist: true, msg: "Successfully logged in", name: data.name, session_token: sessionToken, expires: expiresAt });
     } else {
       res.json({
         exist: false,
@@ -89,10 +155,8 @@ router.post("/users/password", (req, res) => {
 
 router.get("/users/profile", async (req, res) => {
   const { name, email } = req.query;
-  let a = {};
-  if (name) a = { name };
-  else a = { email };
-  const profile = await UserModel.findOne({ a });
+  if (name) var profile = await UserModel.findOne({ name });
+  else var profile = await UserModel.findOne({ email });
   let newprofile = {
     email: profile.email,
     name: profile.name,
@@ -103,17 +167,18 @@ router.get("/users/profile", async (req, res) => {
 });
 
 // build events (應該不需要檢查重複？)
-router.post("/events", (req, res) => {
+router.post("/events", async(req, res) => {
   const { dateString, startTime, endTime, place, people, notes, host } =
     req.body;
+  const user = await UserModel.findOne({email:host});
   const newGame = new GameModel({
     id: uuidv4(),
     date: dateString,
     startTime,
     endTime,
     place,
-    host,
-    participants: [host],
+    host:{email:user.email, username:user.name},
+    participants: [{email:user.email, username:user.name}],
     numberLeft: people,
     notes,
   });
@@ -131,19 +196,6 @@ const sort_games = (games) => {
     else return -1;
   });
 };
-const replace_participants = async (games) => {
-  for (let i = 0; i <= games.length - 1; i++) {
-    let host = await UserModel.findOne({ email: games[i].host });
-    games[i].host = host.name;
-    for (let j = 0; j <= games[i].participants.length - 1; j++) {
-      let participant = await UserModel.findOne({
-        email: games[i].participants[j],
-      });
-      games[i].participants[j] = participant.name;
-    }
-  }
-  return games;
-};
 // get events
 router.get("/games", async (req, res) => {
   const isFuture = req.query.isFuture;
@@ -160,8 +212,7 @@ router.get("/games", async (req, res) => {
     }
   });
   games = sort_games(games);
-  let newgames = await replace_participants(games);
-  res.send(newgames);
+  res.send(games);
 });
 
 router.get("/games/user", async (req, res) => {
@@ -169,22 +220,20 @@ router.get("/games/user", async (req, res) => {
   const Games = await GameModel.find();
   let games = Games.filter((game) => {
     return game.participants.some((participant) => {
-      return participant === email;
+      return participant.email === email;
     });
   });
   games = sort_games(games);
-  let newgames = await replace_participants(games);
-  res.send(newgames);
+  res.send(games);
 });
 
 // a person join
 router.post("/games/join", async (req, res) => {
   const { id, email } = req.body;
-  console.log(req.body);
   const newGame = await GameModel.findOne({ id });
+  const user = await UserModel.findOne({email});
   if (newGame.numberLeft > 0) {
-    newGame.participants.push(email);
-    newGame.participants.sort();
+    newGame.participants.push({email, username:user.name});
     newGame.numberLeft--;
     await newGame.save();
     res.send({ status: true, msg: "Join Success" });
@@ -197,7 +246,7 @@ router.post("/games/cancel", async (req, res) => {
   const newGame = await GameModel.findOne({ id });
   let n = true;
   newGame.participants = newGame.participants.filter((participant) => {
-    if (participant === email && n) {
+    if (participant.email === email && n) {
       n = false;
       return false;
     } else return true;

@@ -56,7 +56,7 @@ const HomePage = () => {
   }
 
   useEffect(()=>{
-      get_data();
+    get_data();
   },[])
 
   return (

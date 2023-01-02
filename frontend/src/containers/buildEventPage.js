@@ -1,13 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { Space, DatePicker, TimePicker, Typography, Input, Button, message } from "antd";
-import { useState } from "react";
 import axios from "../api";
 import { useUserNEvent } from '../hooks/useUserNEvent';
-
 
 const PageWrapper = styled.div`
   width: 100vw;
@@ -33,6 +31,7 @@ const BuildEventPage = () => {
   dayjs.extend(customParseFormat);
   const dateFormat = "YYYY/MM/DD";
   const format = "HH:mm";
+  // const today = new Date().toLocaleDateString("zh-CN",{day: "2-digit", month: "2-digit", year: "numeric"});
   const today = new Date().toISOString().split`-`.join`/`.slice(0,10);
   //const today = new Date().toLocaleDateString("zh-CN");
   const [dateString, setDateString] = useState(today);
@@ -44,7 +43,7 @@ const BuildEventPage = () => {
 
   const {isLogin, me} = useUserNEvent();
   const navigate = useNavigate();
-
+  const { Text } = Typography;
   // create new event
   const handleAdd = async () => {
     if (place === "") {
@@ -52,7 +51,7 @@ const BuildEventPage = () => {
     } else if (people === "") {
       message.error("'Open positions' is empty.")
     } else if (parseInt(people) < 1) {
-      message.error("Open positions should more than 1.")
+      message.error("Open positions should be more than 1.")
     } else {
       const {
         data: { msg },
@@ -80,7 +79,7 @@ const BuildEventPage = () => {
           display: 'flex',
         }}>
         <Space>
-          <Typography.Text>Date</Typography.Text>
+          <Text>Date</Text>
           <DatePicker
             defaultValue={dayjs(dateString, dateFormat)}
             format={dateFormat}
@@ -91,7 +90,7 @@ const BuildEventPage = () => {
           />
         </Space>
         <Space>
-          <Typography.Text>From</Typography.Text>
+          <Text>From</Text>
           <TimePicker
             defaultValue={dayjs(startTime, format)}
             format={format}
@@ -100,7 +99,7 @@ const BuildEventPage = () => {
               console.log(timeString);
             }}
           />
-          <Typography.Text>To</Typography.Text>
+          <Text>To</Text>
           <TimePicker
             defaultValue={dayjs(endTime, format)}
             format={format}
@@ -111,7 +110,7 @@ const BuildEventPage = () => {
           />
         </Space>
         <Space>
-          <Typography.Text>Place<span style={{color: 'red'}}>*</span></Typography.Text>
+          <Text>Place<span style={{color: 'red'}}>*</span></Text>
           <Input
             style={{width: 275}}
             placeholder="Where is this event held?"
@@ -121,7 +120,7 @@ const BuildEventPage = () => {
           />
         </Space>
         <Space>
-          <Typography.Text >Open positions<span style={{color: 'red'}}>*</span></Typography.Text>
+          <Text >Open positions<span style={{color: 'red'}}>*</span></Text>
           <Input
             type='number'
             style={{width: 213}}
@@ -132,7 +131,7 @@ const BuildEventPage = () => {
           />
         </Space>
         <Space>
-          <Typography.Text>Note</Typography.Text>
+          <Text>Note</Text>
           <Input
             style={{width: 285}}
             placeholder="Any other infomation?"
@@ -143,9 +142,9 @@ const BuildEventPage = () => {
         </Space>
         <Button type='primary' onClick={handleAdd}>Build Event</Button>
       </Wrapper>
-      : <Typography.Text mark>
-      Log in to build new events!  
-    </Typography.Text>}
+      : <Text mark>
+      To build a event, please <span style={{cursor: 'pointer', color: 'cornflowerblue'}} onClick={() => navigate("/login")}>log in</span> or <span style={{cursor: 'pointer', color: 'cornflowerblue'}} onClick={() => navigate("/register")}>register</span> first. 
+    </Text>}
     </PageWrapper>
   );
 };

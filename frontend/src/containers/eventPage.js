@@ -1,7 +1,9 @@
 import React, {useState, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { Typography, Card, Button, Space, message, Tooltip, Modal } from 'antd';
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+import { Typography, Card, Button, Space, message, Tooltip, Modal, DatePicker, TimePicker, Input, Select } from 'antd';
 import { useUserNEvent } from '../hooks/useUserNEvent';
 import axios from "../api";
 
@@ -18,29 +20,46 @@ const TextWrapper = styled.div`
   width: 320px;
 `;
 
+const Editable = styled.div`
+  display: flex;
+  justify-content: space-between;
+  width: 245px;
+`;
+
 const EventPage = () => {
-  const { isLogin, me } = useUserNEvent();
+  const { isLogin, me, setMe, setIsLogin } = useUserNEvent();
   const navigate = useNavigate();
   const { Text } = Typography;
-  const [ isModalOpen, setIsModalOpen ] = useState(false);
+  const [ isProfileOpen, setIsProfileOpen ] = useState(false);
+  const [ isEditingOpen, setIsEditingOpen ] = useState(false);
   const [datas, setDatas] = useState([]);
   const [profile, setProfile] = useState({});
+  const [editBefore, setEditBefore] = useState({});
+  const [editAfter, setEditAfter] = useState({});
+  const [filter, setFilter] = useState("");
+  const [searchValue, setSearchValue] = useState("");
+  dayjs.extend(customParseFormat);
+  const dateFormat = "YYYY/MM/DD";
+  const format = "HH:mm";
   
-  const getProfile = async(username) => { // need email input here actually
-    // TODO: get profile data of certain user
+
+  
+  
+  const getProfile = async(email) => { 
+    // get profile data of certain user
     const {
       data: { msg, newprofile },
     } = await axios.get("/users/profile", {
-      params: { username },
+      params: { email },
     });
     message.success(msg);
     setProfile(newprofile);
   }
 
-  const userNameBtn = (username) => {
-    getProfile(username);
+  const userNameBtn = (email) => {
+    getProfile(email);
     // setProfile(fakeProfile) // just for testing
-    setIsModalOpen(true);
+    setIsProfileOpen(true);
   }
 
   const fakeProfile = {
@@ -97,6 +116,37 @@ const EventPage = () => {
     }
     else message.error(msg);
   }
+  const handleEdit = () => {
+    // TODO: update event info to editAfter in DB
+    message.success("Update event successfully")
+    setIsEditingOpen(false);
+  }
+  
+  const editCheck = () => {
+    if (editBefore === editAfter) {
+      message.error("Event is not edited");
+    } else if (editAfter.place === "") {
+      message.error("'Place' is empty.");
+    } else if (editAfter.numberLeft === "") {
+      message.error("'Open positions' is empty.");
+    } else if (parseInt(editAfter.numberLeft) < 0) {
+      message.error("Open positions should be more than 0.");
+    } else {
+      handleEdit();
+    }
+  }
+
+  const searchByDate = () => {
+    // TODO: use searchValue (it's in date format) to get datas
+  };
+
+  const searchByHost = () => {
+    // TODO: use searchValue (it's a normal string) to get datas
+  };
+  
+  const searchByPlace = () => {
+    // TODO: use searchValue (it's a normal string) to get datas
+  };
 
   /*const datas = [
     {
@@ -112,15 +162,105 @@ const EventPage = () => {
   ];*/
   return (
     <div>
-      <Button 
-        type="link" 
-        style={{ marginLeft: 30 }}
-        onClick={() => navigate("/pastevents")}>
-        Events in the past
-      </Button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', margin: '0 20px'}}>
+        <Button 
+          type="link" 
+          onClick={() => navigate("/pastevents")}>
+          Events in the past
+        </Button>
+        <Space>
+          <Select
+          defaultValue="Search"
+          style={{ width: 120 }}
+          onChange={ (value) => {
+            setFilter(value);
+            if (value === 'By Date') {
+              setSearchValue(new Date().toISOString().split`-`.join`/`.slice(0,10))
+            } else if (value === 'All events') {
+              get_datas();
+              setSearchValue("");
+            } else {
+              setSearchValue("");
+            }
+          }}
+          options={[
+            {
+              value: 'By Date',
+              label: 'By Date',
+            },
+            {
+              value: 'By Host',
+              label: 'By Host',
+            },
+            {
+              value: 'By Place',
+              label: 'By Place',
+            },
+            {
+              value: 'All events',
+              label: 'All events',
+            },
+          ]}
+          />
+          { filter === 'By Date' ? 
+            <>
+              <DatePicker
+                defaultValue={dayjs(new Date().toISOString().split`-`.join`/`.slice(0,10), dateFormat)} 
+                format={dateFormat}
+                onChange={(date, dateString) => { 
+                  setSearchValue(dateString);
+                }}
+              />
+              <Button 
+                type="primary" 
+                onClick={searchByDate}>
+                Search
+              </Button>
+            </>
+          :
+            <>
+              { filter === 'By Host' ? 
+                <>
+                  <Input
+                    style={{width: '138px'}}
+                    placeholder="Host name"
+                    onChange={(e) => {
+                      setSearchValue(e.target.value);
+                    }}
+                  />
+                  <Button 
+                    type="primary" 
+                    onClick={searchByHost}>
+                    Search
+                  </Button>
+                </>
+              : 
+              <>
+                { filter === 'By Place' ? 
+                <>
+                  <Input
+                    style={{width: '138px'}}
+                    placeholder="Place"
+                    onChange={(e) => {
+                      setSearchValue(e.target.value);
+                    }}
+                  />
+                  <Button 
+                    type="primary" 
+                    onClick={searchByPlace}>
+                    Search
+                  </Button>
+                </>                
+                : <></> } 
+              </>
+              } 
+            </>
+          }
+        </Space>
+      </div>
       <Wrapper>
         {datas.length === 0 ? 
-        <Text style={{ marginLeft: 45 }}>There's no event opening now.</Text>
+        <Text style={{ marginLeft: 45 }}>No event.</Text>
         : <></>}
         {datas.map((data, i) => {
           return (
@@ -135,7 +275,7 @@ const EventPage = () => {
               <p>Date: {data.date}</p>
               <p>Time: {combine_time(data.startTime, data.endTime)}</p>
               <p>Place: {data.place}</p>
-              <p>Host: {data.host}</p>
+              <p>Host: {data.host.username}</p>
               <div style={{display: 'flex', flexWrap: 'wrap', width: '250px'}}>
                   <p style={{marginRight: '5px'}}>Participants:</p>
                   {data.participants.map((participant, j) => 
@@ -143,9 +283,10 @@ const EventPage = () => {
                     key={j}
                     style={{color: 'cornflowerblue', marginRight: '5px', cursor: 'pointer'}}
                     onClick={() => {
-                      userNameBtn(participant)
+                      // userNameBtn(participant.username)
+                      userNameBtn(participant.email)
                     }}>
-                    {participant}
+                    {participant.username}
                     </p>
                   )}
               </div>
@@ -173,19 +314,27 @@ const EventPage = () => {
                     onClick={() => {
                       handleCancel(data.id, me);
                     }}>Cancel</Button>
+                  { data.host.email === me ? 
+                  <Button 
+                    onClick={() => {
+                      setEditBefore(data);
+                      setEditAfter(data);
+                      setIsEditingOpen(true);
+                    }}>Edit</Button>
+                  : <></>}
                 </Space> 
                 : <Text mark>
-                    To join the event, please log in or register first.
+                    To join the event, please <span style={{cursor: 'pointer', color: 'cornflowerblue'}} onClick={() => navigate("/login")}>log in</span> or <span style={{cursor: 'pointer', color: 'cornflowerblue'}} onClick={() => navigate("/register")}>register</span> first.
                   </Text>}
             </Card>
           );
         })}
         <Modal 
           title="Profile" 
-          open={isModalOpen} 
+          open={isProfileOpen} 
           footer={null}
           onCancel={() => {
-            setIsModalOpen(false);
+            setIsProfileOpen(false);
           }}>
           <Space
             size='large'>
@@ -205,6 +354,83 @@ const EventPage = () => {
                 <Text strong style={{marginRight: '5px'}}>Intro</Text>
                 <Text >{profile.intro}</Text>
               </TextWrapper>
+            </Space>
+          </Space>
+        </Modal>
+        <Modal 
+          title="Edit event" 
+          open={isEditingOpen} 
+          onCancel={() => {
+            setIsEditingOpen(false);
+          }}
+          onOk={editCheck}>
+          <Space 
+            direction="vertical" 
+            size="small">
+            <Space>
+              <Typography.Text>Date</Typography.Text>
+              <DatePicker
+                defaultValue={dayjs(editBefore.date, dateFormat)} 
+                format={dateFormat}
+                onChange={(date, dateString) => { //
+                  setEditAfter({...editAfter, date: dateString});
+                  console.log(editAfter);
+                }}
+              />
+            </Space>
+            <Space>
+              <Typography.Text>From</Typography.Text>
+              <TimePicker
+                defaultValue={dayjs(editBefore.startTime, format)}//
+                format={format}
+                onChange={(time, timeString) => {
+                  setEditAfter({...editAfter, startTime: timeString});
+                  console.log(editAfter);
+                }}
+              />
+              <Typography.Text>To</Typography.Text>
+              <TimePicker
+                defaultValue={dayjs(editBefore.endTime, format)}
+                format={format}
+                onChange={(time, timeString) => {
+                  setEditAfter({...editAfter, endTime: timeString});
+                  console.log(editAfter);
+                }}
+              />
+            </Space>
+            <Space>
+              <Typography.Text>Place<span style={{color: 'red'}}>*</span></Typography.Text>
+              <Input
+                style={{width: 275}}
+                placeholder="Where is this event held?"
+                defaultValue={editBefore.place}
+                onChange={(e) => {
+                  setEditAfter({...editAfter, place: e.target.value});
+                }}
+              />
+            </Space>
+            <Space>
+              <Typography.Text >Open positions<span style={{color: 'red'}}>*</span></Typography.Text>
+              <Input
+                type='number'
+                style={{width: 213}}
+                placeholder="How many positions left?"
+                defaultValue={editBefore.numberLeft}
+                onChange={(e) => {
+                  setEditAfter({...editAfter, numberLeft: e.target.value});
+                }}
+              />
+            </Space>
+            <Space>
+              <Typography.Text>Note</Typography.Text>
+              <Input
+                style={{width: 285}}
+                placeholder="Any other infomation?"
+                defaultValue={editBefore.notes}
+                onChange={(e) => {
+                  setEditAfter({...editAfter, notes: e.target.value});
+                }}
+              />
             </Space>
           </Space>
         </Modal>

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-
-import { Space, Divider, Typography, Button } from 'antd';
+import axios from "../api";
+import { Space, Divider, Typography, Button, message } from 'antd';
 import styled from 'styled-components';
 import { useUserNEvent } from '../hooks/useUserNEvent';
 
 const Wrapper = styled.div`
   display: flex;
   justify-content: space-between;
-  margin: 10px 30px;
+  padding: 10px 30px;
+  margin: 0;
+  // background: green;
 `;
 
 const NavBar = () => {
@@ -17,10 +19,17 @@ const NavBar = () => {
 
     const { Title } = Typography;
 
-    const logout = () => {
+    const logout = async() => {
       setIsLogin(false);
       navigate("/");
       setMe("");
+      const {
+        data: { msg, session_token, expires },
+      } = await axios.get("/logout", {
+        params: { session_token:document.cookie },
+      });
+      message.success(msg);
+      document.cookie = "session_token:"+session_token+";expires:"+expires+";";
     }
     return (
         <Wrapper>
