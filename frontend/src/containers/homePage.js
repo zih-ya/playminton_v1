@@ -60,9 +60,10 @@ const HomePage = () => {
     setIsLoading(true);
     async function fetchData() { 
       await get_data();
+      setIsLoading(false);
     } 
     fetchData();
-    setIsLoading(false);
+    
   },[])
 
   return (

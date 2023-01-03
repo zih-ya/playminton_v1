@@ -33,7 +33,7 @@ const EventPage = () => {
   const [ editAfter, setEditAfter ] = useState({});
   const [ filter, setFilter ] = useState("");
   const [ searchValue, setSearchValue ] = useState({date:"", host:"", place:""});
-  const [ isLoading, setIsLoading ] = useState(false);
+  const [ isLoading, setIsLoading ] = useState(true);
   dayjs.extend(customParseFormat);
   const dateFormat = "YYYY/MM/DD";
   const format = "HH:mm";
@@ -70,12 +70,13 @@ const EventPage = () => {
   }
 
   useEffect(()=>{
-    setIsLoading(true);
+    // setIsLoading(true);
     async function fetchData() { 
       await get_datas();
+      setIsLoading(false);
     } 
     fetchData();
-    setIsLoading(false);
+    
   },[])
 
   const combine_time = (startTime, endTime) => {
