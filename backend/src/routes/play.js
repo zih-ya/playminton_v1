@@ -6,11 +6,11 @@ import sendMail from "../utils/email";
 const router = Router();
 class Session {
   constructor(email, expiresAt) {
-      this.email = email;
-      this.expiresAt = expiresAt;
+    this.email = email;
+    this.expiresAt = expiresAt;
   }
   isExpired() {
-      this.expiresAt < new Date()
+    this.expiresAt < new Date();
   }
 }
 const sessions = {};
@@ -18,32 +18,24 @@ const sessions = {};
 router.get("/login", (req, res) => {
   const newsessionToken = req.query.session_token;
   let sessionToken = newsessionToken.slice(14);
-  if(sessionToken)
-  {
-    let userSession = sessions[sessionToken]
-    if(userSession)
-    {
-      if(userSession.isExpired())
-      {
+  if (sessionToken) {
+    let userSession = sessions[sessionToken];
+    if (userSession) {
+      if (userSession.isExpired()) {
         delete sessions[sessionToken];
-        res.send({ newme:"", newisLogin:false });
-      }
-      else res.send({ newme:userSession.email, newisLogin:true });
-    }
-    else res.send({ newme:"", newisLogin:false });
-  }
-  else res.send({ newme:"", newisLogin:false });
+        res.send({ newme: "", newisLogin: false });
+      } else res.send({ newme: userSession.email, newisLogin: true });
+    } else res.send({ newme: "", newisLogin: false });
+  } else res.send({ newme: "", newisLogin: false });
 });
 
 router.get("/logout", (req, res) => {
   const newsessionToken = req.query.session_token;
   let sessionToken = newsessionToken.slice(14);
-  if(sessionToken)
-  {
+  if (sessionToken) {
     delete sessions[sessionToken];
     res.send({ msg: "Logout Success", session_token: "", expires: new Date() });
-  }
-  else res.send({ msg: "Logout Falure" });
+  } else res.send({ msg: "Logout Falure" });
 });
 
 let token = 0;
@@ -53,21 +45,38 @@ const generateToken = () => {
 
 // 處理 register
 router.post("/user/register", (req, res) => {
-  const { email } = req.body;
+  const { email, msg } = req.body;
+  if (msg == "reset") {
+    UserModel.findOne({ email }, (err, data) => {
+      if (data) {
+        console.log("success");
+        generateToken();
+        sendMail({ email, token });
+        res.send({
+          status: true,
+          msg: "Confirmation code has been sent to your email account",
+        });
+      } else {
+        res.send({ status: false, msg: "Account not found" });
+      }
+    });
+  }
 
   // 確認 email 是否已經註冊過了
-  UserModel.findOne({ email }, (err, data) => {
-    if (data) {
-      res.send({ status: false, msg: "User already exist" });
-    } else {
-      generateToken();
-      sendMail({ email, token });
-      res.send({
-        status: true,
-        msg: "Registration code has been sent to your email account",
-      });
-    }
-  });
+  else if (msg == "register") {
+    UserModel.findOne({ email }, (err, data) => {
+      if (data) {
+        res.send({ status: false, msg: "User already exist" });
+      } else {
+        generateToken();
+        sendMail({ email, token });
+        res.send({
+          status: true,
+          msg: "Registration code has been sent to your email account",
+        });
+      }
+    });
+  }
 });
 
 // to validate user's email
@@ -88,11 +97,17 @@ router.get("/users", (req, res) => {
   UserModel.findOne({ email, password }, (err, data) => {
     if (data) {
       const sessionToken = uuidv4();
-      const now = new Date()
+      const now = new Date();
       const expiresAt = new Date(now + 360000);
       const session = new Session(email, expiresAt);
       sessions[sessionToken] = session;
-      res.json({ exist: true, msg: "Successfully logged in", name: data.name, session_token: sessionToken, expires: expiresAt });
+      res.json({
+        exist: true,
+        msg: "Successfully logged in",
+        name: data.name,
+        session_token: sessionToken,
+        expires: expiresAt,
+      });
     } else {
       res.json({
         exist: false,
@@ -138,7 +153,18 @@ router.post("/users/name", (req, res) => {
 
 // Update password
 router.post("/users/password", (req, res) => {
-  const { email, newPassword, oldPassword } = req.body;
+  const { email, newPassword, oldPassword, msg, code } = req.body;
+
+  if (msg == "forget") {
+    if (code == token) {
+      UserModel.updateOne({ email }, { password: newPassword }, () => {
+        res.send({ status: true, msg: "Successfully reset your password" });
+      });
+    } else {
+      res.send({ status: false, msg: "Incorrect token" });
+    }
+    return;
+  }
 
   // 確認舊密碼是否輸入正確
   UserModel.findOne({ email }, (err, data) => {
@@ -167,18 +193,17 @@ router.get("/users/profile", async (req, res) => {
 });
 
 // build events (應該不需要檢查重複？)
-router.post("/events", async(req, res) => {
+router.post("/events", async (req, res) => {
   const { dateString, startTime, endTime, place, people, notes, host } =
     req.body;
-  const user = await UserModel.findOne({email:host});
   const newGame = new GameModel({
     id: uuidv4(),
     date: dateString,
     startTime,
     endTime,
     place,
-    host:{email:user.email, username:user.name},
-    participants: [{email:user.email, username:user.name}],
+    host,
+    participants: [host],
     numberLeft: people,
     notes,
   });
@@ -196,44 +221,88 @@ const sort_games = (games) => {
     else return -1;
   });
 };
+const replace_participants = async (games) => {
+  let newgames = [];
+  for (let i = 0; i <= games.length - 1; i++) {
+    let newgame = {
+      id: games[i].id,
+      date: games[i].date,
+      startTime: games[i].startTime,
+      endTime: games[i].endTime,
+      place: games[i].place,
+      host: { email: "", username: "" },
+      participants: [],
+      numberLeft: games[i].numberLeft,
+      notes: games[i].notes,
+    };
+    let host = await UserModel.findOne({ email: games[i].host });
+    newgame.host = { email: host.email, username: host.name };
+    for (let j = 0; j <= games[i].participants.length - 1; j++) {
+      let participant = await UserModel.findOne({
+        email: games[i].participants[j],
+      });
+      newgame.participants.push({
+        email: participant.email,
+        username: participant.name,
+      });
+    }
+    newgames.push(newgame);
+  }
+  return newgames;
+};
 // get events
 router.get("/games", async (req, res) => {
-  const isFuture = req.query.isFuture;
+  const { isFuture, user, date, host, place } = req.query;
   const Games = await GameModel.find();
-  let games = Games.filter((game) => {
-    let today = new Date();
-    // You can also use the following for "let day = ..."
-    // const today = new Date().toLocaleDateString("zh-CN");
-    let date = new Date(game.date + " " + game.startTime);
-    if (JSON.parse(isFuture)) {
-      return date > today;
-    } else {
-      return date < today;
-    }
-  });
-  games = sort_games(games);
-  res.send(games);
-});
-
-router.get("/games/user", async (req, res) => {
-  const email = req.query.email;
-  const Games = await GameModel.find();
-  let games = Games.filter((game) => {
-    return game.participants.some((participant) => {
-      return participant.email === email;
+  let games = Games;
+  if (isFuture) {
+    games = games.filter((game) => {
+      let today = new Date();
+      let date = new Date(game.date + " " + game.startTime);
+      if (JSON.parse(isFuture)) {
+        return date > today;
+      } else {
+        return date < today;
+      }
     });
-  });
+  }
+  if (user) {
+    games = games.filter((game) => {
+      return game.participants.some((participant) => {
+        return participant === user;
+      });
+    });
+  }
+  if (date) {
+    games = games.filter((game) => {
+      return game.date === date;
+    });
+  }
+  if (host) {
+    const hostname = await UserModel.findOne({ name: host });
+    if (hostname) {
+      games = games.filter((game) => {
+        return game.host === hostname.email;
+      });
+    } else games = [];
+  }
+  if (place) {
+    games = games.filter((game) => {
+      return game.place === place;
+    });
+  }
   games = sort_games(games);
-  res.send(games);
+  let newgames = await replace_participants(games);
+  res.send(newgames);
 });
 
 // a person join
 router.post("/games/join", async (req, res) => {
   const { id, email } = req.body;
   const newGame = await GameModel.findOne({ id });
-  const user = await UserModel.findOne({email});
   if (newGame.numberLeft > 0) {
-    newGame.participants.push({email, username:user.name});
+    newGame.participants.push(email);
+    newGame.participants.sort();
     newGame.numberLeft--;
     await newGame.save();
     res.send({ status: true, msg: "Join Success" });
@@ -246,7 +315,7 @@ router.post("/games/cancel", async (req, res) => {
   const newGame = await GameModel.findOne({ id });
   let n = true;
   newGame.participants = newGame.participants.filter((participant) => {
-    if (participant.email === email && n) {
+    if (participant === email && n) {
       n = false;
       return false;
     } else return true;
@@ -256,6 +325,21 @@ router.post("/games/cancel", async (req, res) => {
     await newGame.save();
     res.send({ status: true, msg: "Cancel Success" });
   } else res.send({ status: false, msg: "You aren't a participant" });
+});
+
+router.post("/games/edit", async (req, res) => {
+  let game = req.body.editAfter;
+  const newgame = await GameModel.findOne({ id: game.id });
+  if (newgame) {
+    newgame.date = game.date;
+    newgame.startTime = game.startTime;
+    newgame.endTime = game.endTime;
+    newgame.place = game.place;
+    newgame.numberLeft = game.numberLeft;
+    newgame.notes = game.notes;
+    await newgame.save();
+    res.send({ status: true, msg: "Update event successfully" });
+  } else res.send({ status: false, msg: "Update event failed" });
 });
 
 // get announcements

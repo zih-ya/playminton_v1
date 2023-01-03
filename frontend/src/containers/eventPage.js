@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { Typography, Card, Button, Space, message, Tooltip, Modal, DatePicker, TimePicker, Input, Select } from 'antd';
+import { Typography, Card, Button, Space, message, Tooltip, Modal, DatePicker, TimePicker, Input, Select, Avatar } from 'antd';
+import { UserOutlined } from "@ant-design/icons";
 import { useUserNEvent } from '../hooks/useUserNEvent';
 import axios from "../api";
 
@@ -20,30 +21,22 @@ const TextWrapper = styled.div`
   width: 320px;
 `;
 
-const Editable = styled.div`
-  display: flex;
-  justify-content: space-between;
-  width: 245px;
-`;
-
 const EventPage = () => {
   const { isLogin, me, setMe, setIsLogin } = useUserNEvent();
   const navigate = useNavigate();
   const { Text } = Typography;
   const [ isProfileOpen, setIsProfileOpen ] = useState(false);
   const [ isEditingOpen, setIsEditingOpen ] = useState(false);
-  const [datas, setDatas] = useState([]);
-  const [profile, setProfile] = useState({});
-  const [editBefore, setEditBefore] = useState({});
-  const [editAfter, setEditAfter] = useState({});
-  const [filter, setFilter] = useState("");
-  const [searchValue, setSearchValue] = useState("");
+  const [ datas, setDatas ] = useState([]);
+  const [ profile, setProfile ] = useState({});
+  const [ editBefore, setEditBefore ] = useState({});
+  const [ editAfter, setEditAfter ] = useState({});
+  const [ filter, setFilter ] = useState("");
+  const [ searchValue, setSearchValue ] = useState({date:"", host:"", place:""});
+  const [ isLoading, setIsLoading ] = useState(false);
   dayjs.extend(customParseFormat);
   const dateFormat = "YYYY/MM/DD";
   const format = "HH:mm";
-  
-
-  
   
   const getProfile = async(email) => { 
     // get profile data of certain user
@@ -77,7 +70,12 @@ const EventPage = () => {
   }
 
   useEffect(()=>{
-    get_datas();
+    setIsLoading(true);
+    async function fetchData() { 
+      await get_datas();
+    } 
+    fetchData();
+    setIsLoading(false);
   },[])
 
   const combine_time = (startTime, endTime) => {
@@ -95,7 +93,10 @@ const EventPage = () => {
     });
     if(status)
     {
-      get_datas();
+      if(searchValue.date) searchByDate();
+      else if(searchValue.host) searchByHost();
+      else if(searchValue.place) searchByPlace();
+      else get_datas();
       message.success(msg);
     }
     else message.error(msg);
@@ -111,14 +112,28 @@ const EventPage = () => {
     });
     if(status)
     {
-      get_datas();
+      if(searchValue.date) searchByDate();
+      else if(searchValue.host) searchByHost();
+      else if(searchValue.place) searchByPlace();
+      else get_datas();
       message.success(msg);
     }
     else message.error(msg);
   }
-  const handleEdit = () => {
+  const handleEdit = async() => {
     // TODO: update event info to editAfter in DB
-    message.success("Update event successfully")
+    const {
+      data: { status, msg },
+    } = await axios.post("/games/edit", {editAfter});
+    if(status)
+    {
+      if(searchValue.date) searchByDate();
+      else if(searchValue.host) searchByHost();
+      else if(searchValue.place) searchByPlace();
+      else get_datas();
+      message.success(msg);
+    }
+    else message.error(msg);
     setIsEditingOpen(false);
   }
   
@@ -136,16 +151,28 @@ const EventPage = () => {
     }
   }
 
-  const searchByDate = () => {
+  const searchByDate = async() => {
     // TODO: use searchValue (it's in date format) to get datas
+    let data = await axios.get("/games", {
+      params: { isFuture: true, date:searchValue.date },
+    });
+    setDatas(data.data);
   };
 
-  const searchByHost = () => {
+  const searchByHost = async() => {
     // TODO: use searchValue (it's a normal string) to get datas
+    let data = await axios.get("/games", {
+      params: { isFuture: true, host:searchValue.host },
+    });
+    setDatas(data.data);
   };
   
-  const searchByPlace = () => {
+  const searchByPlace = async() => {
     // TODO: use searchValue (it's a normal string) to get datas
+    let data = await axios.get("/games", {
+      params: { isFuture: true, place:searchValue.place },
+    });
+    setDatas(data.data);
   };
 
   /*const datas = [
@@ -208,7 +235,7 @@ const EventPage = () => {
                 defaultValue={dayjs(new Date().toISOString().split`-`.join`/`.slice(0,10), dateFormat)} 
                 format={dateFormat}
                 onChange={(date, dateString) => { 
-                  setSearchValue(dateString);
+                  setSearchValue({date:dateString, host:"", place:""});
                 }}
               />
               <Button 
@@ -225,7 +252,7 @@ const EventPage = () => {
                     style={{width: '138px'}}
                     placeholder="Host name"
                     onChange={(e) => {
-                      setSearchValue(e.target.value);
+                      setSearchValue({date:"", host:e.target.value, place:""});
                     }}
                   />
                   <Button 
@@ -242,7 +269,7 @@ const EventPage = () => {
                     style={{width: '138px'}}
                     placeholder="Place"
                     onChange={(e) => {
-                      setSearchValue(e.target.value);
+                      setSearchValue({date:"", host:"", place:e.target.value});
                     }}
                   />
                   <Button 
@@ -259,9 +286,10 @@ const EventPage = () => {
         </Space>
       </div>
       <Wrapper>
-        {datas.length === 0 ? 
+        { isLoading ? <Text style={{ marginLeft: 45 }}>Loading...</Text> : <>
+        { datas.length === 0 ? 
         <Text style={{ marginLeft: 45 }}>No event.</Text>
-        : <></>}
+        : <>
         {datas.map((data, i) => {
           return (
             <Card
@@ -283,15 +311,18 @@ const EventPage = () => {
                     key={j}
                     style={{color: 'cornflowerblue', marginRight: '5px', cursor: 'pointer'}}
                     onClick={() => {
-                      // userNameBtn(participant.username)
                       userNameBtn(participant.email)
                     }}>
-                    {participant.username}
+                    {participant.username}{","}
                     </p>
                   )}
               </div>
               <p>Number Left: {data.numberLeft}</p>
-              <p>Note: {data.notes}</p>
+              {data.notes === "" ? 
+                <p style={{visibility: "hidden"}}>Note: {data.notes}</p>
+                :
+                <p>Note: {data.notes}</p>
+              }
               {isLogin ?
                 <Space>
                   {data.numberLeft === 0 ?
@@ -328,7 +359,8 @@ const EventPage = () => {
                   </Text>}
             </Card>
           );
-        })}
+        })}</>}
+        </>}
         <Modal 
           title="Profile" 
           open={isProfileOpen} 
@@ -338,7 +370,10 @@ const EventPage = () => {
           }}>
           <Space
             size='large'>
-            <img style={{height: '100px'}} src={profile.avatar}/>
+            { profile.avatar === "" ? 
+            <Avatar size={100} icon={<UserOutlined />} />
+            : <img style={{height: '100px'}} src={profile.avatar}/>}
+            
             <Space
               direction="vertical"
               size="small">
@@ -368,9 +403,9 @@ const EventPage = () => {
             direction="vertical" 
             size="small">
             <Space>
-              <Typography.Text>Date</Typography.Text>
+              <Text>Date</Text>
               <DatePicker
-                defaultValue={dayjs(editBefore.date, dateFormat)} 
+                value={dayjs(editAfter.date, dateFormat)} 
                 format={dateFormat}
                 onChange={(date, dateString) => { //
                   setEditAfter({...editAfter, date: dateString});
@@ -379,54 +414,56 @@ const EventPage = () => {
               />
             </Space>
             <Space>
-              <Typography.Text>From</Typography.Text>
+              <Text>From</Text>
               <TimePicker
-                defaultValue={dayjs(editBefore.startTime, format)}//
+                minuteStep={10}
+                value={dayjs(editAfter.startTime, format)}//
                 format={format}
-                onChange={(time, timeString) => {
-                  setEditAfter({...editAfter, startTime: timeString});
+                onSelect={(time) => {
+                  setEditAfter({...editAfter, startTime: dayjs(time).format("HH:mm")});
                   console.log(editAfter);
                 }}
               />
-              <Typography.Text>To</Typography.Text>
+              <Text>To</Text>
               <TimePicker
-                defaultValue={dayjs(editBefore.endTime, format)}
+                minuteStep={10}
+                value={dayjs(editAfter.endTime, format)}
                 format={format}
-                onChange={(time, timeString) => {
-                  setEditAfter({...editAfter, endTime: timeString});
+                onSelect={(time) => {
+                  setEditAfter({...editAfter, endTime: dayjs(time).format("HH:mm")});
                   console.log(editAfter);
                 }}
               />
             </Space>
             <Space>
-              <Typography.Text>Place<span style={{color: 'red'}}>*</span></Typography.Text>
+              <Text>Place<span style={{color: 'red'}}>*</span></Text>
               <Input
                 style={{width: 275}}
                 placeholder="Where is this event held?"
-                defaultValue={editBefore.place}
+                value={editAfter.place}
                 onChange={(e) => {
                   setEditAfter({...editAfter, place: e.target.value});
                 }}
               />
             </Space>
             <Space>
-              <Typography.Text >Open positions<span style={{color: 'red'}}>*</span></Typography.Text>
+              <Text >Open positions<span style={{color: 'red'}}>*</span></Text>
               <Input
                 type='number'
                 style={{width: 213}}
                 placeholder="How many positions left?"
-                defaultValue={editBefore.numberLeft}
+                value={editAfter.numberLeft}
                 onChange={(e) => {
                   setEditAfter({...editAfter, numberLeft: e.target.value});
                 }}
               />
             </Space>
             <Space>
-              <Typography.Text>Note</Typography.Text>
+              <Text>Note</Text>
               <Input
                 style={{width: 285}}
                 placeholder="Any other infomation?"
-                defaultValue={editBefore.notes}
+                value={editAfter.notes}
                 onChange={(e) => {
                   setEditAfter({...editAfter, notes: e.target.value});
                 }}

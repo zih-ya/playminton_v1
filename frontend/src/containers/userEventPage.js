@@ -35,8 +35,8 @@ const UserEventPage = () => {
     setDatas(fakeDatas);
 
     // TODO: get data of certain user
-    let data = await axios.get("/games/user", {
-      params: { email: me },
+    let data = await axios.get("/games", {
+      params: { user: me },
     });
     setDatas(data.data);
   }
@@ -71,8 +71,17 @@ const UserEventPage = () => {
               <p>Date: {data.date}</p>
               <p>Time: {combine_time(data.startTime, data.endTime)}</p>
               <p>Place: {data.place}</p>
-              <p>Host: {data.host}</p>
-              <p>Participants: {data.participants.join(" ")}</p>
+              <p>Host: {data.host.username}</p>
+              <div style={{display: 'flex', flexWrap: 'wrap', width: '250px'}}>
+                <p style={{marginRight: '5px'}}>Participants:</p>
+                  {data.participants.map((participant, j) => 
+                    <p 
+                      key={j}
+                      style={{marginRight: '5px'}}>
+                    {participant.username}{","}
+                    </p>
+                  )}
+              </div>
               <p>Number Left: {data.numberLeft}</p>
               <p>Note: {data.notes}</p>
             </Card>

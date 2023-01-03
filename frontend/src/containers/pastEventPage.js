@@ -67,8 +67,17 @@ const PastEventPage = () => {
               <p style={{color: "gray"}}>Date: {data.date}</p>
               <p style={{color: "gray"}}>Time: {combine_time(data.startTime, data.endTime)}</p>
               <p style={{color: "gray"}}>Place: {data.place}</p>
-              <p style={{color: "gray"}}>Host: {data.host}</p>
-              <p style={{color: "gray"}}>Participants: {data.participants.join(" ")}</p>
+              <p style={{color: "gray"}}>Host: {data.host.username}</p>
+              <div style={{display: 'flex', flexWrap: 'wrap', width: '250px'}}>
+              <p style={{marginRight: '5px', color: "gray"}}>Participants:</p>
+                  {data.participants.map((participant, j) => 
+                    <p 
+                      key={j}
+                      style={{marginRight: '5px', color: "gray"}}>
+                    {participant.username}{","}
+                    </p>
+                  )}
+              </div>
               <p style={{color: "gray"}}>Number Left: {data.numberLeft}</p>
               <p style={{color: "gray"}}>Note: {data.notes}</p>
               <Typography.Text mark>

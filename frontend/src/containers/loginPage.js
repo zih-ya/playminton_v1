@@ -24,17 +24,16 @@ const Wrapper = styled(Space)`
 
 const LoginPage = () => {
   const { Text } = Typography;
-  const [ email, setEmail ] = useState("");
-  const [ password, setPassword ] = useState("");
-  const [ isModalOpen, setIsModalOpen ] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { setIsLogin, setMe } = useUserNEvent();
   const navigate = useNavigate();
-  const [ modalEmail, setModalEmail ] = useState("");
-  const [ code, setCode ] = useState("");
-  const [ modalPassword, setModalPassword ] = useState("");
-  const [ modalPassword2, setModalPassword2 ] = useState("");
-  const [ isCodeSent, setIsCodeSent ] = useState(false);
-
+  const [modalEmail, setModalEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [modalPassword, setModalPassword] = useState("");
+  const [modalPassword2, setModalPassword2] = useState("");
+  const [isCodeSent, setIsCodeSent] = useState(false);
 
   const login = async (email, password) => {
     const {
@@ -50,7 +49,8 @@ const LoginPage = () => {
       setMe(email);
       setIsLogin(true);
       navigate("/events");
-      document.cookie = "session_token:"+session_token+";expires:"+expires+";";
+      document.cookie =
+        "session_token:" + session_token + ";expires:" + expires + ";";
     } else {
       // show "Invalid email or password"
       message.error(msg);
@@ -69,7 +69,7 @@ const LoginPage = () => {
     }
   };
 
-  const resetPassword = () => {
+  const resetPassword = async () => {
     if (modalEmail === "") {
       message.error("Email is required!");
     } else if (code === "") {
@@ -81,34 +81,40 @@ const LoginPage = () => {
     } else if (modalPassword.length < 8) {
       message.error("Password is too short!");
     } else {
-      // TODO: check is code is correct
-      // correct code:   
-      //     TODO: update modalPassword of modalEmail
-      //     message.success(msg)
-
-      //     setIsModalOpen(false);
-      //     setModalEmail("");
-      //     setCode("");
-      //     setModalPassword("");
-      //     setModalPassword2("");
-      //     setIsCodeSent(false);
-
-      // wrong code:
-      //     message.error(msg)
+      const hashedPassword = hash.keys(modalPassword);
+      const {
+        data: { status, msg },
+      } = await axios.post("./users/password", {
+        newPassword: hashedPassword,
+        code,
+        msg: "forget",
+        email: modalEmail,
+      });
+      if (status) {
+        message.success(msg);
+        setIsModalOpen(false);
+        setModalEmail("");
+        setCode("");
+        setModalPassword("");
+        setModalPassword2("");
+        setIsCodeSent(false);
+      } else {
+        message.error(msg);
+      }
     }
-  }
+  };
 
-  const sendCode = () => {
+  const sendCode = async () => {
     if (modalEmail === "") {
       message.error("Email is required!");
     } else if (!validator.validate(modalEmail)) {
       message.error("Email is invalid!");
     } else {
-      // TODO: send code to modalEmail (user's email)
+      await axios.post("./user/register", { email: modalEmail, msg: "reset" });
       message.success("Code is sent to you email");
       setIsCodeSent(true);
     }
-  }
+  };
 
   return (
     <PageWrapper>
@@ -143,7 +149,12 @@ const LoginPage = () => {
           <Button type="primary" onClick={loginBtn}>
             Log in
           </Button>
-          <Button type="link" onClick={() => {setIsModalOpen(true)}}>
+          <Button
+            type="link"
+            onClick={() => {
+              setIsModalOpen(true);
+            }}
+          >
             Forget password?
           </Button>
         </Space>

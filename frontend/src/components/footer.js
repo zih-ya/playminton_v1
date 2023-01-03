@@ -11,13 +11,16 @@ const FooterWrapper = styled.div`
 `;
 
 const Footer = () => {
-  const { Text } = Typography;
+  const { Text, Link } = Typography;
   return (
     <FooterWrapper>
       <Divider />
       <Text>
-          Contact us if you have any question: [xxxx@gmail.com]
+          Contact us if you have any question: 
       </Text>
+      <Link href="mailto:playminton@gmail.com">
+        playminton1111@gmail.com
+      </Link>
       <Divider />
     </FooterWrapper>
   )

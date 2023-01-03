@@ -92,20 +92,22 @@ const BuildEventPage = () => {
         <Space>
           <Text>From</Text>
           <TimePicker
-            defaultValue={dayjs(startTime, format)}
+            minuteStep={10}
+            value={dayjs(startTime, format)}
             format={format}
-            onChange={(time, timeString) => {
-              setStartTime(timeString);
-              console.log(timeString);
+            onSelect={(time) => {
+              setStartTime(dayjs(time).format("HH:mm"));
+              console.log(dayjs(time).format("HH:mm"));
             }}
           />
           <Text>To</Text>
           <TimePicker
-            defaultValue={dayjs(endTime, format)}
+            minuteStep={10}
+            value={dayjs(endTime, format)}
             format={format}
-            onChange={(time, timeString) => {
-              setEndTime(timeString);
-              console.log(timeString);
+            onSelect={(time) => {
+              setEndTime(dayjs(time).format("HH:mm"));
+              console.log(dayjs(time).format("HH:mm"));
             }}
           />
         </Space>

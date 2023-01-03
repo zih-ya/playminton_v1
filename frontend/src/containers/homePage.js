@@ -16,6 +16,7 @@ const HomePage = () => {
   const [ isModalOpen, setIsModalOpen ] = useState(false);
   const [ announcement, setAnnouncement ] = useState('');
   const [ data, setData ] = useState([]);
+  const [ isLoading, setIsLoading ] = useState(false);
   
   const get_data = async() => {
     let data = await axios.get("/announcements");
@@ -55,8 +56,13 @@ const HomePage = () => {
     console.log(announcementID)
   }
 
-  useEffect(()=>{
-    get_data();
+  useEffect(()=>{ 
+    setIsLoading(true);
+    async function fetchData() { 
+      await get_data();
+    } 
+    fetchData();
+    setIsLoading(false);
   },[])
 
   return (
@@ -82,6 +88,7 @@ const HomePage = () => {
               </Button>
             </Tooltip>}
           </div>}
+          loading={isLoading}
           bordered
           dataSource={data}
           renderItem={(item) => (
@@ -97,10 +104,7 @@ const HomePage = () => {
                   </Tooltip>}
                 </>
                 : 
-                <Tooltip placement="top" title="You're not logged in.">
-                  <Button danger disabled>Delete</Button>
-                </Tooltip>}
-
+                <></>}
               </List.Item>
           )}
         />

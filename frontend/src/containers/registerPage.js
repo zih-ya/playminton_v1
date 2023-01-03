@@ -37,6 +37,7 @@ const RegisterPage = () => {
       data: { status, msg },
     } = await axios.post("./user/register", {
       email,
+      msg: "register",
     });
     if (!status) {
       message.error(msg);
@@ -90,7 +91,7 @@ const RegisterPage = () => {
   return (
     <PageWrapper>
       <Wrapper direction="vertical" size="middle">
-      <Space direction="vertical" size="small">
+        <Space direction="vertical" size="small">
           <Text>
             Name<span style={{ color: "red" }}> *</span>
           </Text>
