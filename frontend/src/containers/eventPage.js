@@ -22,6 +22,7 @@ const TextWrapper = styled.div`
 
   @media screen and (max-width: 510px){
     width: 75vw;
+    flex-direction: column;
   }
 `;
 
@@ -383,10 +384,10 @@ const EventPage = () => {
                 <Text strong style={{marginRight: '5px'}}>Email</Text>
                 <Text >{profile.email}</Text>
               </TextWrapper>
-              <Space>
-                <Text strong>Name</Text>
+              <TextWrapper>
+                <Text strong style={{marginRight: '5px'}}>Name</Text>
                 <Text >{profile.name}</Text>
-              </Space>
+              </TextWrapper>
               <TextWrapper>
                 <Text strong style={{marginRight: '5px'}}>Intro</Text>
                 <Text >{profile.intro}</Text>

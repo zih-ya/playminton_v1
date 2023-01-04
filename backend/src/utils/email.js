@@ -13,7 +13,7 @@ const sendMail = ({ email, token }) => {
     from: process.env.EMAIL,
     to: email,
     subject: "PlayMinton",
-    html: `<h2>Your temporary PlayMinton registration code is ${token}</h2>`,
+    html: `<h2>Your temporary PlayMinton verification code is ${token}</h2>`,
   };
 
   transporter.sendMail(mailOptions, function (error, info) {
