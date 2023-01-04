@@ -48,6 +48,9 @@ const EventPage = () => {
   const [ searchValue, setSearchValue ] = useState({date:"", host:"", place:""});
   const [ isLoading, setIsLoading ] = useState(true);
   const [ isProfileLoading, setIsProfileLoading ] = useState(false);
+  const [ isJoining, setIsJoining ] = useState(false);
+  const [ isCanceling, setIsCanceling ] = useState(false);
+
   dayjs.extend(customParseFormat);
   const dateFormat = "YYYY/MM/DD";
   const format = "HH:mm";
@@ -100,7 +103,7 @@ const EventPage = () => {
   }
 
   const handleJoin = async (eventId, userEmail) => {
-    console.log(eventId, userEmail); 
+    setIsJoining(true); 
     const {
       data: { status, msg },
     } = await axios.post("/games/join", {
@@ -116,10 +119,11 @@ const EventPage = () => {
       message.success(msg);
     }
     else message.error(msg);
+    setIsJoining(false); 
   }
 
   const handleCancel = async (eventId, userEmail) => {
-    console.log(eventId, userEmail); 
+    setIsCanceling(true);
     const {
       data: { status, msg },
     } = await axios.post("/games/cancel", {
@@ -135,6 +139,7 @@ const EventPage = () => {
       message.success(msg);
     }
     else message.error(msg);
+    setIsCanceling(false);
   }
   const handleEdit = async() => {
     // TODO: update event info to editAfter in DB
@@ -323,14 +328,14 @@ const EventPage = () => {
               </div>
               <p>Number Left: {data.numberLeft}</p>
               {data.notes === "" ? 
-                <p style={{visibility: "hidden"}}>Note: {data.notes}</p>
+                <p style={{display: 'none'}}>Note: {data.notes}</p>
                 :
                 <p>Note: {data.notes}</p>
               }
               {isLogin ?
                 <Space>
                   {data.numberLeft === 0 ?
-                  <Tooltip placement="bottom" title='No available position now'>
+                  <Tooltip placement="bottom" title='Full participants'>
                     <Button 
                     disabled
                     type="primary" 
@@ -340,15 +345,17 @@ const EventPage = () => {
                   </Tooltip>
                   :
                   <Button 
+                    disabled={isJoining}
                     type="primary" 
                     onClick={() => {
                       handleJoin(data.id, me);
-                    }}>Join</Button>
+                    }}>{ isJoining ? "Loading" : "Join"}</Button>
                   }
                   <Button 
+                    disabled={isCanceling}
                     onClick={() => {
                       handleCancel(data.id, me);
-                    }}>Cancel</Button>
+                    }}>{ isCanceling ? "Loading" : "Cancel"}</Button>
                   { data.host.email === me ? 
                   <Button 
                     onClick={() => {
