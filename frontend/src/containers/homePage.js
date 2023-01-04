@@ -69,7 +69,7 @@ const HomePage = () => {
   return (
     <HomePageWrapper>
         <List
-          style={{width: 650}}
+          style={{width: 650, margin: '20px'}}
           header={<div style={{ fontWeight: 'bold', 
                                 fontSize: 20,
                                 display: 'flex', 

@@ -19,6 +19,18 @@ const TextWrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
   width: 320px;
+
+  @media screen and (max-width: 510px){
+    width: 75vw;
+  }
+`;
+
+const ProfileWrapper = styled.div`
+  display: flex;
+
+  @media screen and (max-width: 510px){
+    flex-direction: column;
+  }
 `;
 
 const EventPage = () => {
@@ -34,12 +46,14 @@ const EventPage = () => {
   const [ filter, setFilter ] = useState("");
   const [ searchValue, setSearchValue ] = useState({date:"", host:"", place:""});
   const [ isLoading, setIsLoading ] = useState(true);
+  const [ isProfileLoading, setIsProfileLoading ] = useState(false);
   dayjs.extend(customParseFormat);
   const dateFormat = "YYYY/MM/DD";
   const format = "HH:mm";
   
   const getProfile = async(email) => { 
     // get profile data of certain user
+    setIsProfileLoading(true);
     const {
       data: { msg, newprofile },
     } = await axios.get("/users/profile", {
@@ -47,6 +61,7 @@ const EventPage = () => {
     });
     // message.success(msg);
     setProfile(newprofile);
+    setIsProfileLoading(false);
   }
 
   const userNameBtn = (email) => {
@@ -195,10 +210,10 @@ const EventPage = () => {
           onClick={() => navigate("/pastevents")}>
           Events in the past
         </Button>
-        <Space>
+        <Space direction="vertical">
           <Select
           defaultValue="Search"
-          style={{ width: 120 }}
+          style={{ width: 138 }}
           onChange={ (value) => {
             setFilter(value);
             if (value === 'By Date') {
@@ -228,7 +243,8 @@ const EventPage = () => {
               />
               <Button 
                 type="primary" 
-                onClick={searchByDate}>
+                onClick={searchByDate}
+                style={{width: '138px'}}>
                 Search
               </Button>
             </>
@@ -244,7 +260,8 @@ const EventPage = () => {
                 />
                 <Button 
                   type="primary" 
-                  onClick={searchByHost}>
+                  onClick={searchByHost}
+                  style={{width: '138px'}}>
                   Search
                 </Button>
               </>
@@ -261,7 +278,8 @@ const EventPage = () => {
                   />
                   <Button 
                     type="primary" 
-                    onClick={searchByPlace}>
+                    onClick={searchByPlace}
+                    style={{width: '138px'}}>
                     Search
                   </Button>
                 </>
@@ -352,13 +370,12 @@ const EventPage = () => {
           footer={null}
           onCancel={() => {
             setIsProfileOpen(false);
-          }}>
-          <Space
-            size='large'>
+        }}>
+          {isProfileLoading ? <Text style={{ marginLeft: 45 }}>Loading...</Text> : 
+          <ProfileWrapper >
             { profile.avatar ? 
-            <img style={{height: '100px'}} src={profile.avatar}/>
-            : <Avatar size={100} icon={<UserOutlined />} />}
-            
+            <img style={{height: '100px', width: '100px', marginRight: '15px', marginBottom: '15px'}} src={profile.avatar}/>
+            : <Avatar size={100} style={{marginRight: '15px'}} icon={<UserOutlined />} />}
             <Space
               direction="vertical"
               size="small">
@@ -375,7 +392,7 @@ const EventPage = () => {
                 <Text >{profile.intro}</Text>
               </TextWrapper>
             </Space>
-          </Space>
+          </ProfileWrapper>}
         </Modal>
         <Modal 
           title="Edit event" 

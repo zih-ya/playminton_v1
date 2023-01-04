@@ -23,6 +23,12 @@ const Wrapper = styled(Space)`
   margin: 50px 0 0 0;
 `;
 
+const AvatarEditor = styled(ReactAvatar)`
+  @media screen and (max-width: 650px){
+    width: 75vw;
+  }
+`;
+
 const AccountPage = () => {
   const { Title, Text } = Typography;
   const { isLogin, me } = useUserNEvent();
@@ -184,9 +190,9 @@ const AccountPage = () => {
               }}
             >
               <div style={{ marginLeft: "0px" }}>
-                <ReactAvatar
+                <ReactAvatar 
                   width={400}
-                  height={200}
+                  height={250}
                   onCrop={(view) => setPreview(view)}
                   onClose={() => setPreview(null)}
                   src={src} // conmment this line will get error, why?

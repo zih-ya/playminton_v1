@@ -19,7 +19,7 @@ const Wrapper = styled(Space)`
   flex-direction: column;
   justify-content: center;
   align-items: start;
-  margin: 150px 0 0 0;
+  margin: 10vw 0 2vw 0;
 
   .starlabel label:after {
     content:" *";
