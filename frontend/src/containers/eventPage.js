@@ -45,7 +45,7 @@ const EventPage = () => {
     } = await axios.get("/users/profile", {
       params: { email },
     });
-    message.success(msg);
+    // message.success(msg);
     setProfile(newprofile);
   }
 
@@ -76,7 +76,6 @@ const EventPage = () => {
       setIsLoading(false);
     } 
     fetchData();
-    
   },[])
 
   const combine_time = (startTime, endTime) => {
@@ -212,22 +211,10 @@ const EventPage = () => {
             }
           }}
           options={[
-            {
-              value: 'By Date',
-              label: 'By Date',
-            },
-            {
-              value: 'By Host',
-              label: 'By Host',
-            },
-            {
-              value: 'By Place',
-              label: 'By Place',
-            },
-            {
-              value: 'All events',
-              label: 'All events',
-            },
+            { value: 'By Date', label: 'By Date' },
+            { value: 'By Host', label: 'By Host' },
+            { value: 'By Place', label: 'By Place' },
+            { value: 'All events', label: 'All events' },
           ]}
           />
           { filter === 'By Date' ? 
@@ -245,23 +232,22 @@ const EventPage = () => {
                 Search
               </Button>
             </>
-          :
-            <>
+          : <>
               { filter === 'By Host' ? 
-                <>
-                  <Input
-                    style={{width: '138px'}}
-                    placeholder="Host name"
-                    onChange={(e) => {
-                      setSearchValue({date:"", host:e.target.value, place:""});
-                    }}
-                  />
-                  <Button 
-                    type="primary" 
-                    onClick={searchByHost}>
-                    Search
-                  </Button>
-                </>
+              <>
+                <Input
+                  style={{width: '138px'}}
+                  placeholder="Host name"
+                  onChange={(e) => {
+                    setSearchValue({date:"", host:e.target.value, place:""});
+                  }}
+                />
+                <Button 
+                  type="primary" 
+                  onClick={searchByHost}>
+                  Search
+                </Button>
+              </>
               : 
               <>
                 { filter === 'By Place' ? 
@@ -278,12 +264,10 @@ const EventPage = () => {
                     onClick={searchByPlace}>
                     Search
                   </Button>
-                </>                
-                : <></> } 
-              </>
-              } 
-            </>
-          }
+                </>
+                : <></>} 
+              </>} 
+            </>}
         </Space>
       </div>
       <Wrapper>
@@ -371,9 +355,9 @@ const EventPage = () => {
           }}>
           <Space
             size='large'>
-            { profile.avatar === "" ? 
-            <Avatar size={100} icon={<UserOutlined />} />
-            : <img style={{height: '100px'}} src={profile.avatar}/>}
+            { profile.avatar ? 
+            <img style={{height: '100px'}} src={profile.avatar}/>
+            : <Avatar size={100} icon={<UserOutlined />} />}
             
             <Space
               direction="vertical"
@@ -383,7 +367,7 @@ const EventPage = () => {
                 <Text >{profile.email}</Text>
               </TextWrapper>
               <Space>
-                <Text strong style={{marginRight: '5px'}}>Name</Text>
+                <Text strong>Name</Text>
                 <Text >{profile.name}</Text>
               </Space>
               <TextWrapper>

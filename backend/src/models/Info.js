@@ -7,9 +7,15 @@ const UserSchema = new Schema({
   name: String,
   password: String,
   avatar: String,
-  intro: String
+  intro: String,
 });
 const UserModel = mongoose.model("user", UserSchema);
+
+const TokenSchema = new Schema({
+  email: String,
+  token: String,
+});
+const TokenModel = mongoose.model("token", TokenSchema);
 
 const GameSchema = new Schema({
   id: String,
@@ -28,8 +34,8 @@ const AnnouncementSchema = new Schema({
   id: String,
   date: String,
   author: String,
-  msg: String
+  msg: String,
 });
 const AnnouncementModel = mongoose.model("announcement", AnnouncementSchema);
 
-export { UserModel, GameModel, AnnouncementModel };
+export { UserModel, TokenModel, GameModel, AnnouncementModel };

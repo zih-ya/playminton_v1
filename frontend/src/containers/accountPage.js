@@ -15,7 +15,7 @@ const PageWrapper = styled.div`
 `;
 
 const Wrapper = styled(Space)`
-  width: 400px;
+  width: 330px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -129,6 +129,9 @@ const AccountPage = () => {
     });
     if (status) {
       message.success(msg);
+      setNewPassword("");
+      setNewPassword2("");
+      setOldPassword("");
     } else {
       message.error(msg);
     }
@@ -158,31 +161,12 @@ const AccountPage = () => {
           }}
         >
           <Space direction="vertical" size="small">
-            <Title level={3}>Email</Title>
-            <Text keyboard>{me}</Text>
-          </Space>
-          <Space direction="vertical" size="small">
-            <Title level={3}>Name</Title>
-            <Space direction="vertical" size="small">
-              <Input
-                style={{ width: 190 }}
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                }}
-              />
-              <Button type="primary" onClick={updateName}>
-                Update
-              </Button>
-            </Space>
-          </Space>
-          <Space direction="vertical" size="small">
             <Title level={3}>Avatar</Title>
-            {avatar === "" ? (
-              <Avatar size={100} icon={<UserOutlined />} />
-            ) : (
+            { avatar ? 
               <img style={{ height: "100px" }} src={avatar} />
-            )}
+             : 
+              <Avatar size={100} icon={<UserOutlined />} />
+            }
             <Button
               icon={<UploadOutlined />}
               onClick={() => setIsModalOpen(true)}
@@ -212,11 +196,30 @@ const AccountPage = () => {
             </Modal>
           </Space>
           <Space direction="vertical" size="small">
+            <Title level={3}>Email</Title>
+            <Text keyboard>{me}</Text>
+          </Space>
+          <Space direction="vertical" size="small">
+            <Title level={3}>Name</Title>
+            <Space direction="vertical" size="small">
+              <Input
+                style={{ width: 190 }}
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                }}
+              />
+              <Button type="primary" onClick={updateName}>
+                Update
+              </Button>
+            </Space>
+          </Space>
+          <Space direction="vertical" size="small">
             <Title level={3}>Intro</Title>
             <Space direction="vertical" size="small">
               <Input.TextArea
                 rows={3}
-                style={{ width: 400 }}
+                style={{ width: 300 }}
                 value={intro}
                 placeholder="Say something about yourself"
                 onChange={(e) => {
@@ -243,7 +246,8 @@ const AccountPage = () => {
               <Text>Current Password</Text>
               <Input
                 type="password"
-                style={{ width: 400 }}
+                style={{ width: 300 }}
+                value={oldPassword}
                 placeholder="Enter your current password."
                 onChange={(e) => {
                   setOldPassword(e.target.value);
@@ -254,7 +258,8 @@ const AccountPage = () => {
               <Text>New Password</Text>
               <Input
                 type="password"
-                style={{ width: 400 }}
+                style={{ width: 300 }}
+                value={newPassword}
                 placeholder="Enter your new password."
                 onChange={(e) => {
                   setNewPassword(e.target.value);
@@ -265,7 +270,8 @@ const AccountPage = () => {
               <Text>New Password</Text>
               <Input
                 type="password"
-                style={{ width: 400 }}
+                style={{ width: 300 }}
+                value={newPassword2}
                 placeholder="Enter your new password again."
                 onChange={(e) => {
                   setNewPassword2(e.target.value);

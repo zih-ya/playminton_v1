@@ -16,6 +16,7 @@ const UserEventPage = () => {
   const navigate = useNavigate();
   const [datas, setDatas] = useState([]);
   const { me } = useUserNEvent();
+  const [ isLoading, setIsLoading ] = useState(true);
 
   const fakeDatas = [
     { 
@@ -32,7 +33,7 @@ const UserEventPage = () => {
   ];
 
   const getUserDatas = async () => {
-    setDatas(fakeDatas);
+    // setDatas(fakeDatas);
 
     // TODO: get data of certain user
     let data = await axios.get("/games", {
@@ -41,7 +42,12 @@ const UserEventPage = () => {
     setDatas(data.data);
   }
   useEffect(() => {
-    if(me) getUserDatas();
+
+    async function fetchData() { 
+      await getUserDatas();
+      setIsLoading(false);
+    } 
+    if(me) fetchData();
   }, [me]);
 
   const combine_time = (startTime, endTime) => {
@@ -58,6 +64,8 @@ const UserEventPage = () => {
         {"< Back to account page"}
       </Button>
       <Wrapper>
+      { isLoading ? <Typography.Text style={{ marginLeft: 45 }}>Loading...</Typography.Text> 
+      : <> 
         {datas.map((data, i) => {
           return (
             <Card
@@ -87,6 +95,7 @@ const UserEventPage = () => {
             </Card>
           );
         })}
+      </>}
       </Wrapper>
     </div>
   );

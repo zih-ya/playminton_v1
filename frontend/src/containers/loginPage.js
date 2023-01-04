@@ -45,7 +45,7 @@ const LoginPage = () => {
     if (exist) {
       // show "Successfully logged in"
       //document.cookie = "me="+email+";max-age=3600;";
-      message.success(msg);
+      // message.success(msg);
       setMe(email);
       setIsLogin(true);
       navigate("/events");
@@ -203,6 +203,7 @@ const LoginPage = () => {
                   setCode(e.target.value);
                 }}
               />
+              <Text mark>Remember to check the junk box for the code.</Text>
             </Space>
             <Space direction="vertical" size="small">
               <Text>

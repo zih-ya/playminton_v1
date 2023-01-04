@@ -43,6 +43,7 @@ const RegisterPage = () => {
       message.error(msg);
     } else {
       setIsModalOpen(true);
+      message.success(msg);
     }
   };
 
@@ -82,10 +83,16 @@ const RegisterPage = () => {
     }
   };
 
+  const clearToken = async () => {
+    await axios.post("./user/cancel", { email });
+  };
+
   const resendCode = async () => {
     // resend registration code
-    await axios.post("./user/register", { email });
-    message.success("Registration code resent");
+    const {
+      data: { msg },
+    } = await axios.post("./user/register", { email, msg: "re-register" });
+    message.success(msg);
   };
 
   return (
@@ -153,6 +160,7 @@ const RegisterPage = () => {
           open={isModalOpen}
           onOk={checkCode}
           onCancel={() => {
+            clearToken(email);
             message.error("Register fail");
             setIsModalOpen(false);
             setCode("");
@@ -166,6 +174,7 @@ const RegisterPage = () => {
                 setCode(e.target.value);
               }}
             />
+            <Text mark>Remember to check the junk box for the code.</Text>
             <Button onClick={resendCode}>Resend Code</Button>
           </Space>
         </Modal>

@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { UserModel, GameModel, AnnouncementModel } from "../models/Info";
+import {
+  UserModel,
+  TokenModel,
+  GameModel,
+  AnnouncementModel,
+} from "../models/Info";
 import { v4 as uuidv4 } from "uuid";
 import sendMail from "../utils/email";
 
@@ -34,8 +39,12 @@ router.get("/logout", (req, res) => {
   let sessionToken = newsessionToken.slice(14);
   if (sessionToken) {
     delete sessions[sessionToken];
-    res.send({ msg: "Logout Success", session_token: "", expires: new Date() });
-  } else res.send({ msg: "Logout Falure" });
+    res.send({
+      msg: "Logout Successfully",
+      session_token: "",
+      expires: new Date(),
+    });
+  } else res.send({ msg: "Logout Failure" });
 });
 
 let token = 0;
@@ -61,14 +70,15 @@ router.post("/user/register", (req, res) => {
       }
     });
   }
-
-  // 確認 email 是否已經註冊過了
+  // 新註冊
   else if (msg == "register") {
     UserModel.findOne({ email }, (err, data) => {
       if (data) {
         res.send({ status: false, msg: "User already exist" });
       } else {
         generateToken();
+        const newToken = new TokenModel({ email, token });
+        newToken.save();
         sendMail({ email, token });
         res.send({
           status: true,
@@ -77,18 +87,40 @@ router.post("/user/register", (req, res) => {
       }
     });
   }
+  // 重新發送註冊碼
+  else if (msg == "re-register") {
+    generateToken();
+    TokenModel.updateOne({ email }, { token }, () => {
+      sendMail({ email, token });
+    });
+    res.send({
+      msg: "Registration code resent",
+    });
+  }
+});
+
+// cancel registration
+router.post("/user/cancel", async (req, res) => {
+  const { email } = req.body;
+  TokenModel.deleteOne({ email }, () => {});
 });
 
 // to validate user's email
 router.get("/user/validation", async (req, res) => {
   const { code, email, password, name } = req.query;
-  if (code == token) {
-    const newUser = new UserModel({ email, password, name });
-    await newUser.save();
-    res.json({ valid: true, msg: "Successfully registerd" });
-  } else {
-    res.json({ valid: false, msg: "Invalid registration code" });
-  }
+  let customedToken = "";
+  TokenModel.findOne({ email }, (_, data) => {
+    customedToken = data.token;
+
+    if (code == customedToken) {
+      const newUser = new UserModel({ email, password, name });
+      newUser.save();
+      TokenModel.deleteOne({ email }, () => {});
+      res.json({ valid: true, msg: "Successfully registered" });
+    } else {
+      res.json({ valid: false, msg: "Invalid registration code" });
+    }
+  });
 });
 
 // 處理 login
@@ -278,22 +310,29 @@ router.get("/games", async (req, res) => {
       return game.date === date;
     });
   }
-  if (host) {
-    const hostname = await UserModel.findOne({ name: host });
-    if (hostname) {
-      games = games.filter((game) => {
-        return game.host === hostname.email;
-      });
-    } else games = [];
-  }
   if (place) {
     games = games.filter((game) => {
-      return game.place === place;
+      return game.place.includes(place);
     });
   }
-  games = sort_games(games);
-  let newgames = await replace_participants(games);
-  res.send(newgames);
+  if (host) {
+    let result = await Promise.all(
+      games.map(async (game) => {
+        const gamehost = await UserModel.findOne({ email: game.host });
+        return gamehost.name.includes(host);
+      })
+    );
+    let games_searched = games.filter((game, index) => {
+      return result[index];
+    });
+    games_searched = sort_games(games_searched);
+    let newgames = await replace_participants(games_searched);
+    res.send(newgames);
+  } else {
+    games = sort_games(games);
+    let newgames = await replace_participants(games);
+    res.send(newgames);
+  }
 });
 
 // a person join

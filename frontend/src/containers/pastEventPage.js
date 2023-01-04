@@ -16,6 +16,8 @@ const Wrapper = styled.div`
 const PastEventPage = () => {
   const navigate = useNavigate();
   const [datas, setDatas] = useState([]);
+  const [ isLoading, setIsLoading ] = useState(true);
+
 
   const get_datas = async() => {
     let data = await axios.get("/games", {
@@ -24,7 +26,11 @@ const PastEventPage = () => {
     setDatas(data.data);
   }
   useEffect(()=>{
-    get_datas();
+    async function fetchData() { 
+      await get_datas();
+      setIsLoading(false);
+    } 
+    fetchData();
   },[])
 
   const combine_time = (startTime, endTime) => {
@@ -54,6 +60,8 @@ const PastEventPage = () => {
         Events currently open
       </Button>
       <Wrapper>
+        { isLoading ? <Typography.Text style={{ marginLeft: 45 }}>Loading...</Typography.Text>
+        : <>
         {datas.map((data, i) => {
           return (
             <Card
@@ -86,6 +94,7 @@ const PastEventPage = () => {
             </Card>
           );
         })}
+        </>}
       </Wrapper>
     </div>
   );
