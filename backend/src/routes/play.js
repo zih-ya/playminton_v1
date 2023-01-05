@@ -343,7 +343,8 @@ router.post("/games/join", async (req, res) => {
     newGame.participants.push(email);
     newGame.participants.sort();
     newGame.numberLeft--;
-    await newGame.save();
+    await GameModel.findOneAndUpdate({id}, 
+      {participants:newGame.participants, numberLeft:newGame.numberLeft});
     res.send({ status: true, msg: "Join Success" });
   } else res.send({ status: false, msg: "Full Participants" });
 });
@@ -361,7 +362,8 @@ router.post("/games/cancel", async (req, res) => {
   });
   if (!n) {
     newGame.numberLeft = newGame.numberLeft + 1;
-    await newGame.save();
+    await GameModel.findOneAndUpdate({id}, 
+      {participants:newGame.participants, numberLeft:newGame.numberLeft});
     res.send({ status: true, msg: "Cancel Success" });
   } else res.send({ status: false, msg: "You aren't a participant" });
 });

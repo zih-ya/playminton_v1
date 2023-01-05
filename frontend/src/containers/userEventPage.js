@@ -73,7 +73,8 @@ const UserEventPage = () => {
               style={{
                 width: 300,
                 marginLeft: 30,
-                marginTop: 15
+                marginTop: 15,
+                backgroundColor: "#F2F4F4",
               }}
             >
               <p>Date: {data.date}</p>
@@ -91,7 +92,11 @@ const UserEventPage = () => {
                   )}
               </div>
               <p>Number Left: {data.numberLeft}</p>
-              <p>Note: {data.notes}</p>
+              {data.notes === "" ? (
+                        <></>
+                      ) : (
+                        <p>Note: {data.notes}</p>
+              )}
             </Card>
           );
         })}
